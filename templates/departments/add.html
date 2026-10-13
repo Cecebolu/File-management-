@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Add department{% endblock %}
+
+{% block content %}
+
+<div class="page-narrow">
+
+    {{ ui.page_header("Add department", crumbs=[("Departments", url_for('departments.list_departments'))]) }}
+
+    <form method="POST" class="card">
+
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label class="form-label required" for="name">Name</label>
+                <input type="text" id="name" name="name" class="form-control" maxlength="150" placeholder="e.g. Finance" autofocus required>
+            </div>
+
+            <div>
+                <label class="form-label" for="description">Description <span class="text-muted fw-normal">(optional)</span></label>
+                <textarea id="description" name="description" rows="3" class="form-control" placeholder="What does this team do?"></textarea>
+            </div>
+
+        </div>
+
+        <div class="card-footer form-actions">
+            <a href="{{ url_for('departments.list_departments') }}" class="btn btn-light">Cancel</a>
+            <button class="btn btn-primary">Add department</button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

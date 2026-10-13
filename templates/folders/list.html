@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Folders{% endblock %}
+
+{% block content %}
+
+{% call ui.page_header(
+    "Folders",
+    "Top-level folders for every department." if current_user.is_admin else "Your department's folders and folders shared with you."
+) %}
+    {% if current_user.can_upload() %}
+    <a href="{{ url_for('files.upload_file', mode='folder') }}" class="btn btn-light"><i class="bi bi-cloud-arrow-up"></i> Upload folder</a>
+    {% endif %}
+    {% if current_user.can_create_folder() %}
+    <a href="{{ url_for('folders.add_folder') }}" class="btn btn-primary"><i class="bi bi-folder-plus"></i> New folder</a>
+    {% endif %}
+{% endcall %}
+
+<div class="card">
+
+    {% if folders %}
+
+    <div class="table-toolbar">
+        {{ ui.table_search("folders-table", "Search folders…") }}
+        <small class="text-muted">{{ folders|length }} folder{{ "" if folders|length == 1 else "s" }}</small>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle" id="folders-table">
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Contents</th>
+                    <th>Created</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for folder in folders %}
+
+                <tr>
+
+                    <td>
+                        <a href="{{ url_for('folders.view_folder', folder_id=folder.id) }}" class="item-name">
+                            {{ ui.folder_icon() }}
+                            <span class="item-text">
+                                {{ folder.name }}
+                                {% if folder.description %}<span class="item-meta text-truncate">{{ folder.description }}</span>{% endif %}
+                            </span>
+                        </a>
+
+                        {% if folder.shared_departments or folder.shared_users %}
+                            {% if current_user.is_admin %}
+                        <span class="shared-badge ms-2" title="Shared with {{ folder.shared_departments|length }} department(s) and {{ folder.shared_users|length }} person/people"><i class="bi bi-people"></i> Shared</span>
+                            {% elif not current_user.in_own_department(folder) %}
+                        <span class="shared-badge ms-2"><i class="bi bi-people"></i> Shared with you</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+
+                    <td>{{ folder.department.name if folder.department else "—" }}</td>
+
+                    <td class="text-muted text-nowrap">
+                        {% if folder.children %}{{ folder.children|length }} folder{{ "" if folder.children|length == 1 else "s" }} · {% endif %}{{ folder.files|length }} file{{ "" if folder.files|length == 1 else "s" }}
+                    </td>
+
+                    <td class="text-muted text-nowrap">{{ folder.created_at.strftime("%d %b %Y") }}</td>
+
+                    <td class="table-actions">
+                        <div class="row-actions">
+
+                            {% if current_user.is_admin %}
+                            <a href="{{ url_for('folders.share_folder', folder_id=folder.id) }}" class="btn btn-icon" title="Share" aria-label="Share">
+                                <i class="bi bi-person-plus"></i>
+                            </a>
+                            {% endif %}
+
+                            {% if current_user.can_manage_folder(folder) %}
+                            <a href="{{ url_for('folders.edit_folder', folder_id=folder.id) }}" class="btn btn-icon" title="Edit" aria-label="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+
+                            {{ ui.delete_button(url_for('folders.delete_folder', folder_id=folder.id), "Delete “" ~ folder.name ~ "” and everything inside it? This can't be undone.") }}
+                            {% endif %}
+
+                        </div>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                {{ ui.no_results_row(5) }}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    {% call ui.empty_state("bi-folder", "No folders yet",
+        "Create a folder to start organising files." if current_user.can_create_folder() else "Folders from your department, or shared with you, will appear here.") %}
+        {% if current_user.can_create_folder() %}
+        <a href="{{ url_for('folders.add_folder') }}" class="btn btn-primary btn-sm"><i class="bi bi-folder-plus"></i> New folder</a>
+        {% endif %}
+    {% endcall %}
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

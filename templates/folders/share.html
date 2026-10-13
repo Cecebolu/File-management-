@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Share {{ folder.name }}{% endblock %}
+
+{% block content %}
+
+{{ ui.page_header(
+    "Share “" ~ folder.name ~ "”",
+    "Everyone in " ~ folder.department.name ~ " already has access. Choose other departments or people who should also see this folder and everything inside it.",
+    crumbs=[("Folders", url_for('folders.list_folders')), (folder.name, url_for('folders.view_folder', folder_id=folder.id))]
+) }}
+
+<form method="POST">
+
+    <div class="row g-4">
+
+        <!-- DEPARTMENTS -->
+        <div class="col-lg-6">
+
+            <div class="card h-100">
+
+                <div class="card-header">
+                    <h2 class="card-title">Departments</h2>
+                </div>
+
+                <div class="share-list">
+
+                    {% for department in departments %}
+
+                    <label class="share-option">
+
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="department_ids"
+                            value="{{ department.id }}"
+                            {% if department in folder.shared_departments %}checked{% endif %}>
+
+                        <span class="ficon"><i class="bi bi-building"></i></span>
+
+                        <span class="min-w-0">
+                            <span class="fw-medium text-ink d-block text-truncate">{{ department.name }}</span>
+                            <small class="text-muted">{{ department.users|length }} people</small>
+                        </span>
+
+                    </label>
+
+                    {% else %}
+
+                    <div class="card-body text-muted">There are no other departments.</div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- PEOPLE -->
+        <div class="col-lg-6">
+
+            <div class="card h-100">
+
+                <div class="card-header">
+                    <h2 class="card-title">Individual people</h2>
+                </div>
+
+                {% if users %}
+                <div class="px-3 pt-3 pb-2">
+                    <div class="search-input w-100">
+                        <i class="bi bi-search"></i>
+                        <input type="search" class="form-control" placeholder="Search people…" data-filter-list="share-users" aria-label="Search people">
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="share-list" id="share-users">
+
+                    {% for person in users %}
+
+                    <label class="share-option" data-filter-text="{{ person.first_name }} {{ person.last_name }} {{ person.username }}">
+
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="user_ids"
+                            value="{{ person.id }}"
+                            {% if person in folder.shared_users %}checked{% endif %}>
+
+                        {{ ui.avatar(person) }}
+
+                        <span class="min-w-0">
+                            <span class="fw-medium text-ink d-block text-truncate">{{ person.first_name }} {{ person.last_name }}</span>
+                            <small class="text-muted">{{ ui.role_label(person.role) }} · {{ person.department.name if person.department else "No department" }}</small>
+                        </span>
+
+                    </label>
+
+                    {% else %}
+
+                    <div class="card-body text-muted">Everyone outside {{ folder.department.name }} is an administrator, and administrators can already see every folder.</div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="form-actions mt-4">
+        <a href="{{ url_for('folders.view_folder', folder_id=folder.id) }}" class="btn btn-light">Cancel</a>
+        <button class="btn btn-primary">Save sharing</button>
+    </div>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Move file{% endblock %}
+
+{% block content %}
+
+<div class="page-narrow">
+
+    {{ ui.page_header("Move file", "Choose the folder this file should live in.",
+        crumbs=[("All files", url_for('files.list_files')), (file.filename, url_for('files.view_file', file_id=file.id))]) }}
+
+    <form method="POST" class="card">
+
+        <div class="card-body">
+
+            <div class="folder-location mb-4">
+                {{ ui.file_icon(file.filename) }}
+                <div class="min-w-0">
+                    <div class="fw-medium text-ink text-truncate">{{ file.filename }}</div>
+                    <small class="text-muted">Currently in {{ file.folder.path }}</small>
+                </div>
+            </div>
+
+            <label class="form-label required" for="folder_id">Destination folder</label>
+
+            <select id="folder_id" name="folder_id" class="form-select" required>
+
+                {% for folder in folders %}
+                <option value="{{ folder.id }}" {% if folder.id == file.folder_id %}selected{% endif %}>
+                    {{ folder.department.name }} › {{ folder.path|replace(" / ", " › ") }}
+                </option>
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <div class="card-footer form-actions">
+            <a href="{{ url_for('files.view_file', file_id=file.id) }}" class="btn btn-light">Cancel</a>
+            <button type="submit" class="btn btn-primary">Move file</button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

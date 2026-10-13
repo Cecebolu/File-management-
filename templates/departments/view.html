@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}{{ department.name }}{% endblock %}
+
+{% block content %}
+
+{% set top_folders = department.folders|selectattr("parent_id", "none")|sort(attribute="name")|list %}
+
+{% call ui.page_header(department.name, department.description, crumbs=[("Departments", url_for('departments.list_departments'))]) %}
+    {{ ui.delete_button(
+        url_for('departments.delete_department', department_id=department.id),
+        "Delete the " ~ department.name ~ " department? Its folders and files will be deleted too.",
+        label="Delete"
+    ) }}
+    <a href="{{ url_for('departments.edit_department', department_id=department.id) }}" class="btn btn-light"><i class="bi bi-pencil"></i> Edit</a>
+{% endcall %}
+
+<div class="row g-3 mb-4">
+
+    <div class="col-sm-4">
+        <a href="{{ url_for('departments.department_users', department_id=department.id) }}" class="stat-card">
+            <div class="stat-top">People <i class="bi bi-people"></i></div>
+            <div class="stat-value">{{ department.users|length }}</div>
+        </a>
+    </div>
+
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="stat-top">Folders <i class="bi bi-folder"></i></div>
+            <div class="stat-value">{{ top_folders|length }}</div>
+        </div>
+    </div>
+
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="stat-top">Status <i class="bi bi-circle-half"></i></div>
+            <div class="mt-2">{{ ui.status_badge(department.active) }}</div>
+            <div class="stat-note mt-1">Created {{ department.created_at.strftime("%d %b %Y") }}</div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4">
+
+    <div class="col-lg-6">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">People</h2>
+                <a href="{{ url_for('departments.department_users', department_id=department.id) }}">View all</a>
+            </div>
+
+            {% for person in department.users|sort(attribute="first_name") %}
+            {% if loop.index <= 8 %}
+            <a href="{{ url_for('users.view_user', user_id=person.id) }}" class="list-row">
+                {{ ui.avatar(person) }}
+                <div class="flex-grow-1 min-w-0">
+                    <div class="list-title text-truncate">{{ person.first_name }} {{ person.last_name }}</div>
+                    <div class="list-sub text-truncate">{{ person.email }}</div>
+                </div>
+                {{ ui.role_badge(person.role) }}
+            </a>
+            {% endif %}
+            {% else %}
+            {% call ui.empty_state("bi-people", "No one in this department", compact=True) %}
+                <a href="{{ url_for('users.add_user') }}" class="btn btn-light btn-sm"><i class="bi bi-person-plus"></i> Add user</a>
+            {% endcall %}
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-6">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">Folders</h2>
+            </div>
+
+            {% for folder in top_folders %}
+            <a href="{{ url_for('folders.view_folder', folder_id=folder.id) }}" class="list-row">
+                {{ ui.folder_icon() }}
+                <div class="flex-grow-1 min-w-0">
+                    <div class="list-title text-truncate">{{ folder.name }}</div>
+                    <div class="list-sub">{{ folder.files|length }} file{{ "" if folder.files|length == 1 else "s" }}</div>
+                </div>
+                <i class="bi bi-chevron-right text-muted small"></i>
+            </a>
+            {% else %}
+            {% call ui.empty_state("bi-folder", "No folders yet", compact=True) %}
+                <a href="{{ url_for('folders.add_folder') }}" class="btn btn-light btn-sm"><i class="bi bi-folder-plus"></i> New folder</a>
+            {% endcall %}
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

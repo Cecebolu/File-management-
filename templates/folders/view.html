@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}{{ folder.name }}{% endblock %}
+
+{% block content %}
+
+{% set crumbs = [("Folders", url_for('folders.list_folders')), (folder.department.name, None)] %}
+{% for ancestor in folder.ancestors %}
+    {% if crumbs.append((ancestor.name, url_for('folders.view_folder', folder_id=ancestor.id))) %}{% endif %}
+{% endfor %}
+
+{% call ui.page_header(folder.name, folder.description, crumbs=crumbs) %}
+
+    {% if current_user.can_manage_folder(folder) or (current_user.is_admin and not folder.parent_id) %}
+    <div class="dropdown">
+        <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
+            <i class="bi bi-three-dots"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            {% if current_user.is_admin and not folder.parent_id %}
+            <li><a class="dropdown-item" href="{{ url_for('folders.share_folder', folder_id=folder.id) }}"><i class="bi bi-person-plus me-2"></i>Share</a></li>
+            {% endif %}
+            {% if current_user.can_manage_folder(folder) %}
+            <li><a class="dropdown-item" href="{{ url_for('folders.edit_folder', folder_id=folder.id) }}"><i class="bi bi-pencil me-2"></i>Edit details</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <form method="POST" action="{{ url_for('folders.delete_folder', folder_id=folder.id) }}"
+                      data-confirm="Delete “{{ folder.name }}”{{ ' and everything inside it' if subfolders or files }}? This can't be undone.">
+                    <button class="dropdown-item text-danger"><i class="bi bi-trash3 me-2"></i>Delete folder</button>
+                </form>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if current_user.can_create_subfolder(folder) %}
+    <a href="{{ url_for('folders.add_folder', parent_id=folder.id) }}" class="btn btn-light"><i class="bi bi-folder-plus"></i> New subfolder</a>
+    {% endif %}
+
+    {% if current_user.can_upload(folder) %}
+    <a href="{{ url_for('files.upload_file', folder_id=folder.id) }}" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Upload</a>
+    {% endif %}
+
+{% endcall %}
+
+<div class="row g-4">
+
+    <!-- =========================
+         CONTENTS
+    ========================== -->
+    <div class="col-xl-9 col-lg-8">
+
+        <div class="card">
+
+            {% if subfolders or files %}
+
+            <div class="table-toolbar">
+                {{ ui.table_search("folder-contents", "Search this folder…") }}
+                <small class="text-muted">
+                    {% if subfolders %}{{ subfolders|length }} folder{{ "" if subfolders|length == 1 else "s" }} · {% endif %}{{ files|length }} file{{ "" if files|length == 1 else "s" }}
+                </small>
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle" id="folder-contents">
+
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Uploaded by</th>
+                            <th>Size</th>
+                            <th>Date</th>
+                            <th><span class="visually-hidden">Actions</span></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for sub in subfolders %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('folders.view_folder', folder_id=sub.id) }}" class="item-name">
+                                    {{ ui.folder_icon() }}
+                                    <span class="item-text">{{ sub.name }}</span>
+                                </a>
+                            </td>
+                            <td class="text-muted">—</td>
+                            <td class="text-muted text-nowrap">
+                                {% if sub.children %}{{ sub.children|length }} folder{{ "" if sub.children|length == 1 else "s" }}, {% endif %}{{ sub.files|length }} file{{ "" if sub.files|length == 1 else "s" }}
+                            </td>
+                            <td class="text-muted text-nowrap">{{ sub.created_at.strftime("%d %b %Y") }}</td>
+                            <td class="table-actions">
+                                {% if current_user.can_manage_folder(sub) %}
+                                <div class="row-actions">
+                                    <a href="{{ url_for('folders.edit_folder', folder_id=sub.id) }}" class="btn btn-icon" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+                                    {{ ui.delete_button(url_for('folders.delete_folder', folder_id=sub.id), "Delete “" ~ sub.name ~ "” and everything inside it? This can't be undone.") }}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% for file in files %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_id=file.id) }}" class="item-name">
+                                    {{ ui.file_icon(file.filename) }}
+                                    <span class="item-text">{{ file.filename }}</span>
+                                </a>
+                            </td>
+                            <td class="text-nowrap">{{ ui.uploader_name(file) }}</td>
+                            <td class="text-muted text-nowrap tabular">{{ file.file_size|filesize }}</td>
+                            <td class="text-muted text-nowrap">{{ file.uploaded_at.strftime("%d %b %Y") }}</td>
+                            <td class="table-actions">
+                                <div class="row-actions">
+                                    {% if current_user.can_download(file) %}
+                                    <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-icon" title="Download" aria-label="Download"><i class="bi bi-download"></i></a>
+                                    {% endif %}
+                                    {% if current_user.can_modify_file(file) %}
+                                    <a href="{{ url_for('files.edit_file', file_id=file.id) }}" class="btn btn-icon" title="Move" aria-label="Move"><i class="bi bi-folder-symlink"></i></a>
+                                    {{ ui.delete_button(
+                                        url_for('files.delete_file', file_id=file.id),
+                                        "Delete " ~ file.filename ~ "? This can't be undone.",
+                                        next=url_for('folders.view_folder', folder_id=folder.id)
+                                    ) }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {{ ui.no_results_row(5) }}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            {% call ui.empty_state("bi-folder2-open", "This folder is empty", "Upload files or create a subfolder to get started.") %}
+                {% if current_user.can_upload(folder) %}
+                <a href="{{ url_for('files.upload_file', folder_id=folder.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-cloud-arrow-up"></i> Upload files</a>
+                {% endif %}
+            {% endcall %}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <!-- =========================
+         DETAILS
+    ========================== -->
+    <div class="col-xl-3 col-lg-4">
+
+        <div class="card">
+
+            <div class="card-header">
+                <h2 class="card-title">Details</h2>
+            </div>
+
+            <div class="card-body">
+
+                <dl class="detail-list compact">
+                    <div><dt>Department</dt><dd>{{ folder.department.name }}</dd></div>
+                    <div><dt>Subfolders</dt><dd class="tabular">{{ subfolders|length }}</dd></div>
+                    <div><dt>Files</dt><dd class="tabular">{{ files|length }}</dd></div>
+                    <div><dt>Created</dt><dd>{{ folder.created_at.strftime("%d %b %Y") }}</dd></div>
+                </dl>
+
+            </div>
+
+            <div class="card-body border-top">
+
+                <h3 class="section-title mb-2">Who has access</h3>
+
+                {% set root = folder.root %}
+
+                <div class="d-flex flex-wrap gap-1">
+
+                    <span class="shared-badge"><i class="bi bi-building"></i> {{ folder.department.name }}</span>
+
+                    {% for department in root.shared_departments %}
+                        <span class="shared-badge"><i class="bi bi-building"></i> {{ department.name }}</span>
+                    {% endfor %}
+
+                    {% for person in root.shared_users %}
+                        <span class="shared-badge"><i class="bi bi-person"></i> {{ person.first_name }} {{ person.last_name }}</span>
+                    {% endfor %}
+
+                </div>
+
+                <p class="small text-muted mt-2 mb-0">
+                    {% if folder.parent_id %}
+                    Access is set on the top folder,
+                    <a href="{{ url_for('folders.view_folder', folder_id=root.id) }}">{{ root.name }}</a>.
+                    {% else %}
+                    Administrators can see every folder.
+                    {% endif %}
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

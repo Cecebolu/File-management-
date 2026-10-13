@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Edit {{ folder.name }}{% endblock %}
+
+{% block content %}
+
+{% set crumbs = [("Folders", url_for('folders.list_folders'))] %}
+{% for ancestor in folder.ancestors + [folder] %}
+    {% if crumbs.append((ancestor.name, url_for('folders.view_folder', folder_id=ancestor.id))) %}{% endif %}
+{% endfor %}
+
+<div class="page-narrow">
+
+    {{ ui.page_header("Edit folder", crumbs=crumbs) }}
+
+    <form method="POST" class="card">
+
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label class="form-label required" for="name">Name</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ folder.name }}" maxlength="150" required>
+            </div>
+
+            {% if not folder.parent_id %}
+
+            <div class="mb-3">
+
+                <label class="form-label required" for="department_id">Department</label>
+
+                <select id="department_id" name="department_id" class="form-select" required>
+                    {% for department in departments %}
+                    <option value="{{ department.id }}" {% if folder.department_id == department.id %}selected{% endif %}>{{ department.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <div class="form-text">Changing the department moves every subfolder inside it too.</div>
+
+            </div>
+
+            {% else %}
+
+            <div class="callout mb-3">
+                <i class="bi bi-info-circle"></i>
+                <div>This subfolder belongs to <strong>{{ folder.department.name }}</strong>, like the folder it's in.</div>
+            </div>
+
+            {% endif %}
+
+            <div>
+                <label class="form-label" for="description">Description <span class="text-muted fw-normal">(optional)</span></label>
+                <textarea id="description" name="description" rows="3" class="form-control">{{ folder.description or "" }}</textarea>
+            </div>
+
+        </div>
+
+        <div class="card-footer form-actions">
+            <a href="{{ url_for('folders.view_folder', folder_id=folder.id) }}" class="btn btn-light">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

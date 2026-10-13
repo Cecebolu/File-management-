@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}{{ "New subfolder" if parent else "New folder" }}{% endblock %}
+
+{% block content %}
+
+{% if parent %}
+    {% set crumbs = [("Folders", url_for('folders.list_folders'))] %}
+    {% for ancestor in parent.ancestors + [parent] %}
+        {% if crumbs.append((ancestor.name, url_for('folders.view_folder', folder_id=ancestor.id))) %}{% endif %}
+    {% endfor %}
+{% else %}
+    {% set crumbs = [("Folders", url_for('folders.list_folders'))] %}
+{% endif %}
+
+<div class="page-narrow">
+
+    {{ ui.page_header(
+        "New subfolder" if parent else "New folder",
+        "Subfolders share the department and access of the folder they're in." if parent else "Folders belong to a department. Everyone in that department can open them.",
+        crumbs=crumbs
+    ) }}
+
+    <form method="POST" class="card">
+
+        <div class="card-body">
+
+            {% if parent %}
+
+            <input type="hidden" name="parent_id" value="{{ parent.id }}">
+
+            <div class="folder-location mb-4">
+                {{ ui.folder_icon() }}
+                <div class="min-w-0">
+                    <small class="text-muted d-block">Will be created inside</small>
+                    <span class="fw-medium text-ink">{{ parent.department.name }} › {{ parent.path|replace(" / ", " › ") }}</span>
+                </div>
+            </div>
+
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label required" for="name">Name</label>
+                <input type="text" id="name" name="name" class="form-control" maxlength="150" autofocus required>
+            </div>
+
+            {% if not parent %}
+
+            <div class="mb-3">
+
+                <label class="form-label required" for="department_id">Department</label>
+
+                <select id="department_id" name="department_id" class="form-select" required>
+
+                    {% if departments|length != 1 %}
+                    <option value="">Choose a department…</option>
+                    {% endif %}
+
+                    {% for department in departments %}
+                    <option value="{{ department.id }}">{{ department.name }}</option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            {% endif %}
+
+            <div>
+                <label class="form-label" for="description">Description <span class="text-muted fw-normal">(optional)</span></label>
+                <textarea id="description" name="description" rows="3" class="form-control" placeholder="What goes in this folder?"></textarea>
+            </div>
+
+        </div>
+
+        <div class="card-footer form-actions">
+            <a href="{{ url_for('folders.view_folder', folder_id=parent.id) if parent else url_for('folders.list_folders') }}" class="btn btn-light">Cancel</a>
+            <button type="submit" class="btn btn-primary">{{ "Create subfolder" if parent else "Create folder" }}</button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

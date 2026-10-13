@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+
+{{ ui.page_header("Reports", "Storage, activity and usage across departments.") }}
+
+<div class="card">
+
+    {% call ui.empty_state("bi-bar-chart-line", "Reports are coming soon",
+        "This section will show storage use per department, upload activity over time and the most active people.") %}
+        <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-light btn-sm"><i class="bi bi-grid"></i> Back to dashboard</a>
+    {% endcall %}
+
+</div>
+
+{% endblock %}

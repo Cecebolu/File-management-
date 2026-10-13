@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+{% set hour = now.hour %}
+
+{% call ui.page_header(
+    ("Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening") ~ ", " ~ user.first_name,
+    "Here's an overview of documents and people across the organisation."
+) %}
+    <a href="{{ url_for('users.add_user') }}" class="btn btn-light"><i class="bi bi-person-plus"></i> Add user</a>
+    <a href="{{ url_for('files.upload_file') }}" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Upload</a>
+{% endcall %}
+
+<!-- =========================
+     STATISTICS
+========================== -->
+<div class="row g-3 mb-4">
+
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('users.list_users') }}" class="stat-card">
+            <div class="stat-top">Users <i class="bi bi-people"></i></div>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-note">{{ active_users }} active · {{ inactive_users }} disabled</div>
+        </a>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('departments.list_departments') }}" class="stat-card">
+            <div class="stat-top">Departments <i class="bi bi-building"></i></div>
+            <div class="stat-value">{{ total_departments }}</div>
+            <div class="stat-note">Teams in the organisation</div>
+        </a>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('folders.list_folders') }}" class="stat-card">
+            <div class="stat-top">Folders <i class="bi bi-folder"></i></div>
+            <div class="stat-value">{{ total_folders }}</div>
+            <div class="stat-note">Including subfolders</div>
+        </a>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('files.list_files') }}" class="stat-card">
+            <div class="stat-top">Files <i class="bi bi-file-earmark-text"></i></div>
+            <div class="stat-value">{{ total_files }}</div>
+            <div class="stat-note">Stored across all folders</div>
+        </a>
+    </div>
+
+</div>
+
+<div class="row g-4">
+
+    <!-- RECENT FILES -->
+    <div class="col-xl-8">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">Recent uploads</h2>
+                <a href="{{ url_for('files.list_files') }}">View all</a>
+            </div>
+
+            {% if latest_files %}
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Folder</th>
+                            <th>Uploaded by</th>
+                            <th class="text-end">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in latest_files %}
+                        <tr>
+                            <td class="min-w-0">
+                                <a href="{{ url_for('files.view_file', file_id=file.id) }}" class="item-name">
+                                    {{ ui.file_icon(file.filename) }}
+                                    <span class="item-text">{{ file.filename }}</span>
+                                </a>
+                            </td>
+                            <td class="text-muted">{{ file.folder.path }}</td>
+                            <td>{{ ui.uploader_name(file) }}</td>
+                            <td class="text-muted text-end text-nowrap">{{ file.uploaded_at.strftime("%d %b %Y") }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% else %}
+
+            {% call ui.empty_state("bi-cloud-arrow-up", "No files yet", "Uploaded files will appear here.") %}
+                <a href="{{ url_for('files.upload_file') }}" class="btn btn-primary btn-sm"><i class="bi bi-cloud-arrow-up"></i> Upload files</a>
+            {% endcall %}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <!-- DEPARTMENTS -->
+    <div class="col-xl-4">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">Departments</h2>
+                <a href="{{ url_for('departments.list_departments') }}">Manage</a>
+            </div>
+
+            {% for department in latest_departments %}
+
+            <a href="{{ url_for('departments.view_department', department_id=department.id) }}" class="list-row">
+                <span class="ficon"><i class="bi bi-building"></i></span>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="list-title text-truncate">{{ department.name }}</div>
+                    <div class="list-sub">{{ department.users|length }} people · {{ department.folders|length }} folders</div>
+                </div>
+                <i class="bi bi-chevron-right text-muted small"></i>
+            </a>
+
+            {% else %}
+
+            {% call ui.empty_state("bi-building", "No departments", compact=True) %}
+                <a href="{{ url_for('departments.add_department') }}" class="btn btn-light btn-sm"><i class="bi bi-plus-lg"></i> Add department</a>
+            {% endcall %}
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <!-- LATEST USERS -->
+    <div class="col-xl-6">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">Newest users</h2>
+                <a href="{{ url_for('users.list_users') }}">View all</a>
+            </div>
+
+            {% for employee in latest_users %}
+
+            <a href="{{ url_for('users.view_user', user_id=employee.id) }}" class="list-row">
+                {{ ui.avatar(employee) }}
+                <div class="flex-grow-1 min-w-0">
+                    <div class="list-title text-truncate">{{ employee.first_name }} {{ employee.last_name }}</div>
+                    <div class="list-sub">{{ employee.department.name if employee.department else "No department" }}</div>
+                </div>
+                {{ ui.role_badge(employee.role) }}
+            </a>
+
+            {% else %}
+
+            {{ ui.empty_state("bi-people", "No users yet", compact=True) }}
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="col-xl-6">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">Recent activity</h2>
+            </div>
+
+            {% for log in recent_activity %}
+
+            <div class="list-row">
+                {{ ui.avatar(log.user, "avatar-sm") }}
+                <div class="flex-grow-1 min-w-0">
+                    <span class="list-title">{{ log.user.first_name }} {{ log.user.last_name }}</span>
+                    <span class="text-muted">{{ log.action }}</span>
+                </div>
+                <small class="text-muted text-nowrap">{{ log.created_at.strftime("%d %b, %H:%M") }}</small>
+            </div>
+
+            {% else %}
+
+            {{ ui.empty_state("bi-clock-history", "No activity yet", "Actions people take will be listed here.", compact=True) }}
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

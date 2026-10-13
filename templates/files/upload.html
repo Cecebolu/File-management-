@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Upload{% endblock %}
+
+{% block content %}
+
+{% set folder_mode = mode == "folder" and destinations %}
+
+<div class="page-narrow">
+
+    {{ ui.page_header("Upload", "Add files to a folder, or upload a whole folder from your computer.") }}
+
+    <div class="card">
+
+        <div class="card-header pb-0 border-0">
+
+            <ul class="nav nav-tabs w-100" role="tablist">
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not folder_mode %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#upload-files" type="button" role="tab">
+                        <i class="bi bi-files me-1"></i> Files
+                    </button>
+                </li>
+
+                {% if destinations %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if folder_mode %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#upload-folder" type="button" role="tab">
+                        <i class="bi bi-folder-symlink me-1"></i> Whole folder
+                    </button>
+                </li>
+                {% endif %}
+
+            </ul>
+
+        </div>
+
+        <div class="tab-content">
+
+            <!-- =========================
+                 FILES
+            ========================== -->
+            <div class="tab-pane fade {% if not folder_mode %}show active{% endif %}" id="upload-files" role="tabpanel">
+
+                <form method="POST" enctype="multipart/form-data">
+
+                    <input type="hidden" name="mode" value="files">
+
+                    <div class="card-body">
+
+                        <div class="mb-4">
+
+                            <label class="form-label required" for="folder_id">Folder</label>
+
+                            <select id="folder_id" name="folder_id" class="form-select" required>
+
+                                <option value="">Choose a folder…</option>
+
+                                {% for folder in folders %}
+                                <option value="{{ folder.id }}" {% if folder.id == selected_folder_id %}selected{% endif %}>
+                                    {{ folder.department.name }} › {{ folder.path|replace(" / ", " › ") }}
+                                </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                        <label class="dropzone" data-summary="files-summary">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <span><strong>Click to choose files</strong> or drag them here</span>
+                            <small>You can select several files at once</small>
+                            <input type="file" name="files" multiple required>
+                        </label>
+
+                        <div class="dropzone-summary" id="files-summary"></div>
+
+                    </div>
+
+                    <div class="card-footer form-actions">
+                        <a href="{{ request.referrer or url_for('files.list_files') }}" class="btn btn-light">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Upload files</button>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <!-- =========================
+                 WHOLE FOLDER
+            ========================== -->
+            {% if destinations %}
+            <div class="tab-pane fade {% if folder_mode %}show active{% endif %}" id="upload-folder" role="tabpanel">
+
+                <form method="POST" enctype="multipart/form-data" id="folder-upload-form">
+
+                    <input type="hidden" name="mode" value="folder">
+                    <input type="hidden" name="paths" id="folder-paths">
+
+                    <div class="card-body">
+
+                        <div class="mb-4">
+
+                            <label class="form-label required" for="destination">Put the folder in</label>
+
+                            <select id="destination" name="destination" class="form-select" required>
+
+                                <option value="">Choose where it goes…</option>
+
+                                {% for value, label in destinations %}
+                                <option value="{{ value }}" {% if value == selected_destination %}selected{% endif %}>
+                                    {{ label|replace(" / ", " › ") }}
+                                </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                        <label class="dropzone" data-summary="folder-summary">
+                            <i class="bi bi-folder2-open"></i>
+                            <span><strong>Click to choose a folder</strong> from your computer</span>
+                            <small>Subfolders and files are recreated exactly as they are</small>
+                            <input type="file" name="files" id="folder-input" webkitdirectory multiple required>
+                        </label>
+
+                        <div class="dropzone-summary" id="folder-summary"></div>
+
+                        <div class="callout mt-4">
+                            <i class="bi bi-info-circle"></i>
+                            <div>
+                                If a folder with the same name is already there, the files are added to it.
+                                Empty subfolders are skipped, because browsers only send folders that contain files.
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer form-actions">
+                        <a href="{{ request.referrer or url_for('files.list_files') }}" class="btn btn-light">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Upload folder</button>
+                    </div>
+
+                </form>
+
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <p class="text-muted small mt-3 mb-0">
+        <i class="bi bi-shield-check me-1"></i>
+        Files are only visible to people who can open the folder they're in. Maximum 100 MB per upload.
+    </p>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+
+    var form = document.getElementById("folder-upload-form");
+
+    if (!form) return;
+
+    var input = document.getElementById("folder-input");
+
+    // The server needs each file's path inside the folder to rebuild the subfolders
+    form.addEventListener("submit", function () {
+
+        document.getElementById("folder-paths").value = JSON.stringify(
+            Array.prototype.map.call(input.files, function (file) {
+                return file.webkitRelativePath || file.name;
+            })
+        );
+    });
+
+})();
+</script>
+{% endblock %}

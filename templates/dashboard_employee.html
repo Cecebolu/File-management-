@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+{% set hour = now.hour %}
+
+{% if department %}
+    {% set subtitle = "Here's what's new in your folders." %}
+{% elif folders %}
+    {% set subtitle = "You're not in a department yet, but some folders have been shared with you." %}
+{% else %}
+    {% set subtitle = "Your account isn't assigned to a department yet." %}
+{% endif %}
+
+{% call ui.page_header(
+    ("Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening") ~ ", " ~ user.first_name,
+    subtitle
+) %}
+    {% if user.can_create_folder() %}
+    <a href="{{ url_for('folders.add_folder') }}" class="btn btn-light"><i class="bi bi-folder-plus"></i> New folder</a>
+    {% endif %}
+    {% if user.can_upload() and folders %}
+    <a href="{{ url_for('files.upload_file') }}" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Upload</a>
+    {% endif %}
+{% endcall %}
+
+{% if not department and not folders %}
+
+<div class="card">
+    {{ ui.empty_state("bi-building-exclamation", "You're not in a department yet",
+        "Ask an administrator to add you to a department. Once you're assigned, its folders and files will appear here.") }}
+</div>
+
+{% else %}
+
+<!-- =========================
+     STATISTICS
+========================== -->
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <a href="{{ url_for('folders.list_folders') }}" class="stat-card">
+            <div class="stat-top">Folders <i class="bi bi-folder"></i></div>
+            <div class="stat-value">{{ folders|length }}</div>
+            <div class="stat-note">Your department and shared with you</div>
+        </a>
+    </div>
+
+    <div class="col-md-4">
+        <a href="{{ url_for('files.list_files') }}" class="stat-card">
+            <div class="stat-top">Files <i class="bi bi-file-earmark-text"></i></div>
+            <div class="stat-value">{{ total_department_files }}</div>
+            <div class="stat-note">In the folders you can see</div>
+        </a>
+    </div>
+
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-top">My uploads <i class="bi bi-person"></i></div>
+            <div class="stat-value">{{ total_my_files }}</div>
+            <div class="stat-note">Files you've uploaded</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- =========================
+     FOLDERS
+========================== -->
+<h2 class="section-title">Folders</h2>
+
+<div class="row g-3 mb-4">
+
+    {% for folder in folders %}
+
+    <div class="col-xl-3 col-lg-4 col-sm-6">
+        <a href="{{ url_for('folders.view_folder', folder_id=folder.id) }}" class="folder-tile">
+            {{ ui.folder_icon() }}
+            <div class="min-w-0">
+                <div class="tile-title text-truncate">{{ folder.name }}</div>
+                <div class="tile-sub text-truncate">
+                    {{ folder.files|length }} file{{ "" if folder.files|length == 1 else "s" }}
+                    {% if not user.in_own_department(folder) %}· {{ folder.department.name }}{% endif %}
+                </div>
+            </div>
+        </a>
+    </div>
+
+    {% else %}
+
+    <div class="col-12">
+        <div class="card">
+            {{ ui.empty_state("bi-folder", "No folders yet", compact=True) }}
+        </div>
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<div class="row g-4">
+
+    <!-- RECENT FILES -->
+    <div class="col-xl-8">
+
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h2 class="card-title">Recent files</h2>
+                <a href="{{ url_for('files.list_files') }}">View all</a>
+            </div>
+
+            {% if recent_files %}
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Folder</th>
+                            <th>Uploaded by</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in recent_files %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_id=file.id) }}" class="item-name">
+                                    {{ ui.file_icon(file.filename) }}
+                                    <span class="item-text">{{ file.filename }}</span>
+                                </a>
+                            </td>
+                            <td class="text-muted">{{ file.folder.path }}</td>
+                            <td>{{ ui.uploader_name(file) }}</td>
+                            <td class="table-actions">
+                                {% if user.can_download(file) %}
+                                <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-icon" title="Download" aria-label="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% else %}
+
+            {{ ui.empty_state("bi-file-earmark", "No files yet", "Files uploaded to your folders will appear here.") }}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <!-- SIDE COLUMN -->
+    <div class="col-xl-4 d-flex flex-column gap-4">
+
+        <div class="card">
+
+            <div class="card-header">
+                <h2 class="card-title">My recent uploads</h2>
+            </div>
+
+            {% for file in my_recent_files %}
+
+            <a href="{{ url_for('files.view_file', file_id=file.id) }}" class="list-row">
+                {{ ui.file_icon(file.filename) }}
+                <div class="flex-grow-1 min-w-0">
+                    <div class="list-title text-truncate">{{ file.filename }}</div>
+                    <div class="list-sub">{{ file.uploaded_at.strftime("%d %b %Y") }}</div>
+                </div>
+            </a>
+
+            {% else %}
+
+            <div class="card-body text-muted">You haven't uploaded anything yet.</div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="card">
+
+            <div class="card-header">
+                <h2 class="card-title">Your team</h2>
+            </div>
+
+            {% for colleague in colleagues %}
+
+            <div class="list-row">
+                {{ ui.avatar(colleague) }}
+                <div class="flex-grow-1 min-w-0">
+                    <div class="list-title text-truncate">{{ colleague.first_name }} {{ colleague.last_name }}</div>
+                    <div class="list-sub">{{ ui.role_label(colleague.role) }}</div>
+                </div>
+            </div>
+
+            {% else %}
+
+            <div class="card-body text-muted">No one else is in your department yet.</div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

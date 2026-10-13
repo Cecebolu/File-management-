@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}{{ file.filename }}{% endblock %}
+
+{% block content %}
+
+{% set crumbs = [("Folders", url_for('folders.list_folders'))] %}
+{% for ancestor in file.folder.ancestors + [file.folder] %}
+    {% if crumbs.append((ancestor.name, url_for('folders.view_folder', folder_id=ancestor.id))) %}{% endif %}
+{% endfor %}
+
+<div class="page-narrow">
+
+    {% call ui.page_header(file.filename, crumbs=crumbs) %}
+        {% if current_user.can_download(file) %}
+        <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-primary"><i class="bi bi-download"></i> Download</a>
+        {% endif %}
+    {% endcall %}
+
+    <div class="card">
+
+        <div class="card-body d-flex align-items-center gap-3">
+            {{ ui.file_icon(file.filename, "ficon-lg") }}
+            <div class="min-w-0">
+                <div class="fw-semibold text-ink text-truncate">{{ file.filename }}</div>
+                <div class="text-muted small">{{ file.file_size|filesize }} · {{ file.file_type or "Unknown type" }}</div>
+            </div>
+        </div>
+
+        <div class="card-body border-top">
+
+            <dl class="detail-list">
+
+                <div>
+                    <dt>Folder</dt>
+                    <dd><a href="{{ url_for('folders.view_folder', folder_id=file.folder_id) }}">{{ file.folder.path }}</a></dd>
+                </div>
+
+                <div>
+                    <dt>Department</dt>
+                    <dd>{{ file.folder.department.name }}</dd>
+                </div>
+
+                <div>
+                    <dt>Uploaded by</dt>
+                    <dd>{{ file.uploader.first_name }} {{ file.uploader.last_name }}</dd>
+                </div>
+
+                <div>
+                    <dt>Uploaded on</dt>
+                    <dd>{{ file.uploaded_at.strftime("%d %B %Y at %H:%M") }}</dd>
+                </div>
+
+                <div>
+                    <dt>Size</dt>
+                    <dd class="tabular">{{ file.file_size|filesize }}{% if file.file_size %} <span class="text-muted">({{ "{:,}".format(file.file_size) }} bytes)</span>{% endif %}</dd>
+                </div>
+
+            </dl>
+
+        </div>
+
+        {% if current_user.can_modify_file(file) %}
+        <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+            <a href="{{ url_for('files.edit_file', file_id=file.id) }}" class="btn btn-light">
+                <i class="bi bi-folder-symlink"></i> Move to another folder
+            </a>
+
+            {{ ui.delete_button(
+                url_for('files.delete_file', file_id=file.id),
+                "Delete " ~ file.filename ~ "? This can't be undone.",
+                next=url_for('folders.view_folder', folder_id=file.folder_id),
+                label="Delete file"
+            ) }}
+
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

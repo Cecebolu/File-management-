@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}All files{% endblock %}
+
+{% block content %}
+
+{% call ui.page_header(
+    "All files",
+    "Every file across the organisation." if current_user.is_admin else "Files in your department and folders shared with you."
+) %}
+    {% if current_user.can_upload() %}
+    <a href="{{ url_for('files.upload_file') }}" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Upload</a>
+    {% endif %}
+{% endcall %}
+
+<div class="card">
+
+    {% if files %}
+
+    <div class="table-toolbar">
+        {{ ui.table_search("files-table", "Search by name, folder or person…") }}
+        <small class="text-muted">{{ files|length }} file{{ "" if files|length == 1 else "s" }}</small>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle" id="files-table">
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Folder</th>
+                    <th>Uploaded by</th>
+                    <th>Size</th>
+                    <th>Date</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for file in files %}
+
+                <tr>
+
+                    <td>
+                        <a href="{{ url_for('files.view_file', file_id=file.id) }}" class="item-name">
+                            {{ ui.file_icon(file.filename) }}
+                            <span class="item-text">{{ file.filename }}</span>
+                        </a>
+                    </td>
+
+                    <td>
+                        <a href="{{ url_for('folders.view_folder', folder_id=file.folder_id) }}" class="text-muted">
+                            {{ file.folder.path }}
+                        </a>
+                    </td>
+
+                    <td class="text-nowrap">{{ ui.uploader_name(file) }}</td>
+
+                    <td class="text-muted text-nowrap tabular">{{ file.file_size|filesize }}</td>
+
+                    <td class="text-muted text-nowrap">{{ file.uploaded_at.strftime("%d %b %Y") }}</td>
+
+                    <td class="table-actions">
+                        <div class="row-actions">
+
+                            {% if current_user.can_download(file) %}
+                            <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-icon" title="Download" aria-label="Download">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            {% endif %}
+
+                            {% if current_user.can_modify_file(file) %}
+                            <a href="{{ url_for('files.edit_file', file_id=file.id) }}" class="btn btn-icon" title="Move" aria-label="Move">
+                                <i class="bi bi-folder-symlink"></i>
+                            </a>
+
+                            {{ ui.delete_button(url_for('files.delete_file', file_id=file.id), "Delete " ~ file.filename ~ "? This can't be undone.") }}
+                            {% endif %}
+
+                        </div>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                {{ ui.no_results_row(6) }}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    {% call ui.empty_state("bi-file-earmark", "No files yet", "Files uploaded to folders you can see will be listed here.") %}
+        {% if current_user.can_upload() %}
+        <a href="{{ url_for('files.upload_file') }}" class="btn btn-primary btn-sm"><i class="bi bi-cloud-arrow-up"></i> Upload files</a>
+        {% endif %}
+    {% endcall %}
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

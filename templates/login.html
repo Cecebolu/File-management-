@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block body %}
+
+<section class="login-page">
+
+    <!-- =========================
+         BRAND PANEL
+    ========================== -->
+    <div class="login-aside">
+
+        <span class="sidebar-brand">
+            <span class="brand-mark"><i class="bi bi-folder2-open"></i></span>
+            DocoraFile
+        </span>
+
+        <div>
+
+            <h1>Company documents, organised and secure.</h1>
+
+            <p>
+                One place for every department's files, with clear control
+                over who can see and change what.
+            </p>
+
+            <ul class="login-points">
+                <li><i class="bi bi-shield-check"></i> Access by department, role and sharing</li>
+                <li><i class="bi bi-diagram-3"></i> Folders and subfolders that mirror how you work</li>
+                <li><i class="bi bi-cloud-arrow-up"></i> Upload single files or whole folders</li>
+            </ul>
+
+        </div>
+
+        <small>© {{ now.year }} DocoraFile</small>
+
+    </div>
+
+    <!-- =========================
+         FORM
+    ========================== -->
+    <div class="login-main">
+
+        <div class="login-card">
+
+            <span class="sidebar-brand d-lg-none text-dark px-0 mb-4">
+                <span class="brand-mark"><i class="bi bi-folder2-open"></i></span>
+                DocoraFile
+            </span>
+
+            <h2>Sign in</h2>
+
+            <p class="text-muted mb-4">Enter your username and password to continue.</p>
+
+            {{ ui.flash_messages() }}
+
+            <form method="POST">
+
+                <div class="mb-3">
+
+                    <label class="form-label" for="username">Username</label>
+
+                    <div class="input-icon">
+                        <i class="bi bi-person"></i>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="username"
+                            name="username"
+                            autocomplete="username"
+                            value="{{ request.form.get('username', '') }}"
+                            autofocus
+                            required>
+                    </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label" for="password">Password</label>
+
+                    <div class="input-icon">
+                        <i class="bi bi-lock"></i>
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="password"
+                            name="password"
+                            autocomplete="current-password"
+                            required>
+                        <button type="button" class="toggle-password" data-toggle-password="password" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+
+                </div>
+
+                <div class="form-check mb-4">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="remember"
+                        name="remember">
+
+                    <label class="form-check-label" for="remember">Keep me signed in</label>
+
+                </div>
+
+                <button class="btn btn-primary btn-lg w-100">Sign in</button>
+
+            </form>
+
+            <p class="text-muted small text-center mt-4 mb-0">
+                Forgot your password? Contact your administrator.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

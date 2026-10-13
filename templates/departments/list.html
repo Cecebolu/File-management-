@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+
+{% call ui.page_header("Departments", "Teams in your organisation. Each department has its own folders and people.") %}
+    <a href="{{ url_for('departments.add_department') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add department</a>
+{% endcall %}
+
+<div class="card">
+
+    {% if departments %}
+
+    <div class="table-toolbar">
+        {{ ui.table_search("departments-table", "Search departments…") }}
+        <small class="text-muted">{{ departments|length }} department{{ "" if departments|length == 1 else "s" }}</small>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle" id="departments-table">
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>People</th>
+                    <th>Folders</th>
+                    <th>Created</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for department in departments %}
+
+                <tr>
+
+                    <td>
+                        <a href="{{ url_for('departments.view_department', department_id=department.id) }}" class="item-name">
+                            <span class="ficon"><i class="bi bi-building"></i></span>
+                            <span class="item-text">
+                                {{ department.name }}
+                                {% if department.description %}<span class="item-meta text-truncate" style="max-width:420px">{{ department.description }}</span>{% endif %}
+                            </span>
+                        </a>
+                    </td>
+
+                    <td class="tabular">
+                        <a href="{{ url_for('departments.department_users', department_id=department.id) }}" class="text-reset">{{ department.users|length }}</a>
+                    </td>
+
+                    <td class="tabular">{{ department.folders|selectattr("parent_id", "none")|list|length }}</td>
+
+                    <td class="text-muted text-nowrap">{{ department.created_at.strftime("%d %b %Y") }}</td>
+
+                    <td class="table-actions">
+                        <div class="row-actions">
+                            <a href="{{ url_for('departments.edit_department', department_id=department.id) }}" class="btn btn-icon" title="Edit" aria-label="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {{ ui.delete_button(
+                                url_for('departments.delete_department', department_id=department.id),
+                                "Delete the " ~ department.name ~ " department? Its folders and files will be deleted too."
+                            ) }}
+                        </div>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                {{ ui.no_results_row(5) }}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    {% call ui.empty_state("bi-building", "No departments yet", "Add departments to group people and their folders.") %}
+        <a href="{{ url_for('departments.add_department') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add department</a>
+    {% endcall %}
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

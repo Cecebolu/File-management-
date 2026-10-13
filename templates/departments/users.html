@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}{{ department.name }} · People{% endblock %}
+
+{% block content %}
+
+{% call ui.page_header("People in " ~ department.name, crumbs=[
+    ("Departments", url_for('departments.list_departments')),
+    (department.name, url_for('departments.view_department', department_id=department.id))
+]) %}
+    <a href="{{ url_for('users.add_user') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add user</a>
+{% endcall %}
+
+<div class="card">
+
+    {% if users %}
+
+    <div class="table-toolbar">
+        {{ ui.table_search("department-users", "Search people…") }}
+        <small class="text-muted">{{ users|length }} {{ "person" if users|length == 1 else "people" }}</small>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle" id="department-users">
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for employee in users|sort(attribute="first_name") %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('users.view_user', user_id=employee.id) }}" class="item-name">
+                            {{ ui.avatar(employee) }}
+                            <span class="item-text">
+                                {{ employee.first_name }} {{ employee.last_name }}
+                                <span class="item-meta">{{ employee.email }}</span>
+                            </span>
+                        </a>
+                    </td>
+                    <td class="text-muted">{{ employee.username }}</td>
+                    <td>{{ ui.role_badge(employee.role) }}</td>
+                    <td>{{ ui.status_badge(employee.active) }}</td>
+                </tr>
+                {% endfor %}
+
+                {{ ui.no_results_row(4) }}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    {{ ui.empty_state("bi-people", "No one in this department yet", "Assign people to " ~ department.name ~ " from the Users page.") }}
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

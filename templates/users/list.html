@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+
+{% set search = request.args.get('search', '') %}
+
+{% call ui.page_header("Users", "People who can sign in, their roles and departments.") %}
+    <a href="{{ url_for('users.add_user') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add user</a>
+{% endcall %}
+
+<div class="card">
+
+    <div class="table-toolbar">
+
+        <form method="GET" class="search-input" role="search">
+            <i class="bi bi-search"></i>
+            <input type="search" class="form-control" name="search" placeholder="Search name, username or email…" value="{{ search }}" aria-label="Search users">
+        </form>
+
+        <small class="text-muted">
+            {% if search %}
+            {{ users|length }} result{{ "" if users|length == 1 else "s" }} for “{{ search }}” ·
+            <a href="{{ url_for('users.list_users') }}">Clear</a>
+            {% else %}
+            {{ users|length }} user{{ "" if users|length == 1 else "s" }}
+            {% endif %}
+        </small>
+
+    </div>
+
+    {% if users %}
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle">
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for person in users %}
+
+                <tr>
+
+                    <td>
+                        <a href="{{ url_for('users.view_user', user_id=person.id) }}" class="item-name">
+                            {{ ui.avatar(person) }}
+                            <span class="item-text">
+                                {{ person.first_name }} {{ person.last_name }}
+                                {% if person.id == current_user.id %}<span class="badge badge-soft ms-1">You</span>{% endif %}
+                                <span class="item-meta">{{ person.email }}</span>
+                            </span>
+                        </a>
+                    </td>
+
+                    <td class="text-muted">{{ person.username }}</td>
+
+                    <td>{{ person.department.name if person.department else "—" }}</td>
+
+                    <td>{{ ui.role_badge(person.role) }}</td>
+
+                    <td>{{ ui.status_badge(person.active) }}</td>
+
+                    <td class="text-muted text-nowrap">{{ person.created_at.strftime("%d %b %Y") }}</td>
+
+                    <td class="table-actions">
+                        <div class="row-actions">
+                            <a href="{{ url_for('users.edit_user', user_id=person.id) }}" class="btn btn-icon" title="Edit" aria-label="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if person.id != current_user.id %}
+                            {{ ui.delete_button(
+                                url_for('users.delete_user', user_id=person.id),
+                                "Delete " ~ person.first_name ~ " " ~ person.last_name ~ "? They will no longer be able to sign in."
+                            ) }}
+                            {% else %}
+                            <span class="btn btn-icon disabled" title="You can't delete your own account"><i class="bi bi-lock"></i></span>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% elif search %}
+
+    {{ ui.empty_state("bi-search", "No users found", "No one matches “" ~ search ~ "”. Try a different name, username or email.") }}
+
+    {% else %}
+
+    {% call ui.empty_state("bi-people", "No users yet") %}
+        <a href="{{ url_for('users.add_user') }}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus"></i> Add user</a>
+    {% endcall %}
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

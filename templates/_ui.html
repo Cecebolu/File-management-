@@ -1,0 +1,145 @@
+{# Shared UI pieces. Import with: {% import "_ui.html" as ui with context %} #}
+
+
+{% macro flash_messages() %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+        <div class="flash-stack">
+
+            {% for category, message in messages %}
+
+                {% set icon = {"success": "bi-check-circle-fill", "danger": "bi-exclamation-octagon-fill", "warning": "bi-exclamation-triangle-fill"}.get(category, "bi-info-circle-fill") %}
+
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+
+                    <i class="bi {{ icon }}"></i>
+
+                    <div>{{ message }}</div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+        {% endif %}
+
+    {% endwith %}
+
+{% endmacro %}
+
+
+{# Page title row. crumbs is a list of (label, url) pairs; url may be None.
+   Buttons go between {% call ui.page_header(...) %} and {% endcall %}. #}
+{% macro page_header(title, subtitle=None, crumbs=()) %}
+<div class="page-header">
+    <div class="min-w-0">
+        {% if crumbs %}
+        <nav class="crumbs" aria-label="Breadcrumb">
+            {% for label, url in crumbs %}
+                {% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span>{{ label }}</span>{% endif %}
+                <i class="bi bi-chevron-right"></i>
+            {% endfor %}
+        </nav>
+        {% endif %}
+        <h1 class="text-truncate">{{ title }}</h1>
+        {% if subtitle %}<p class="page-subtitle">{{ subtitle }}</p>{% endif %}
+    </div>
+    {% if caller is defined %}
+    <div class="page-actions">{{ caller() }}</div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# Coloured icon chosen from the file extension #}
+{% macro file_icon(filename, size="") %}
+{%- set ext = filename.rsplit(".", 1)[-1]|lower if "." in filename else "" -%}
+{%- if ext == "pdf" -%}{% set kind, icon = "pdf", "bi-file-earmark-pdf" %}
+{%- elif ext in ("doc", "docx", "odt", "rtf") -%}{% set kind, icon = "word", "bi-file-earmark-word" %}
+{%- elif ext in ("xls", "xlsx", "xlsm", "csv", "ods") -%}{% set kind, icon = "excel", "bi-file-earmark-spreadsheet" %}
+{%- elif ext in ("ppt", "pptx", "odp") -%}{% set kind, icon = "ppt", "bi-file-earmark-slides" %}
+{%- elif ext in ("png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "tif", "tiff", "heic") -%}{% set kind, icon = "image", "bi-file-earmark-image" %}
+{%- elif ext in ("zip", "rar", "7z", "tar", "gz") -%}{% set kind, icon = "zip", "bi-file-earmark-zip" %}
+{%- elif ext in ("mp3", "wav", "m4a", "mp4", "mov", "avi", "mkv") -%}{% set kind, icon = "media", "bi-file-earmark-play" %}
+{%- elif ext in ("py", "js", "html", "css", "json", "xml", "sql") -%}{% set kind, icon = "code", "bi-file-earmark-code" %}
+{%- elif ext in ("txt", "md") -%}{% set kind, icon = "", "bi-file-earmark-text" %}
+{%- else -%}{% set kind, icon = "", "bi-file-earmark" %}
+{%- endif -%}
+<span class="ficon {% if kind %}ficon-{{ kind }}{% endif %} {{ size }}"><i class="bi {{ icon }}"></i></span>
+{%- endmacro %}
+
+
+{% macro folder_icon(size="") -%}
+<span class="ficon ficon-folder {{ size }}"><i class="bi bi-folder-fill"></i></span>
+{%- endmacro %}
+
+
+{% macro avatar(person, size="") -%}
+<span class="avatar {{ size }}">{{ person.first_name[:1] }}{{ person.last_name[:1] }}</span>
+{%- endmacro %}
+
+
+{% macro role_label(role) -%}
+{{ "Super Admin" if role == "superadmin" else role|title }}
+{%- endmacro %}
+
+
+{% macro role_badge(role) -%}
+<span class="badge {{ {'superadmin': 'badge-violet', 'manager': 'badge-blue'}.get(role, 'badge-soft') }}">{{ role_label(role) }}</span>
+{%- endmacro %}
+
+
+{% macro status_badge(active) -%}
+{% if active %}
+<span class="badge badge-green badge-dot">Active</span>
+{% else %}
+<span class="badge badge-red badge-dot">Disabled</span>
+{% endif %}
+{%- endmacro %}
+
+
+{# Centred message for empty lists. Optional button between call / endcall. #}
+{% macro empty_state(icon, title, text=None, compact=False) %}
+<div class="empty-state {% if compact %}compact{% endif %}">
+    <div class="empty-icon"><i class="bi {{ icon }}"></i></div>
+    <h3>{{ title }}</h3>
+    {% if text %}<p>{{ text }}</p>{% endif %}
+    {% if caller is defined %}{{ caller() }}{% endif %}
+</div>
+{% endmacro %}
+
+
+{# Icon button that POSTs a delete after asking for confirmation #}
+{% macro delete_button(action, message, next=None, label=None) -%}
+<form method="POST" action="{{ action }}" data-confirm="{{ message }}">
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% if label %}
+    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> {{ label }}</button>
+    {% else %}
+    <button type="submit" class="btn btn-icon btn-icon-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash3"></i></button>
+    {% endif %}
+</form>
+{%- endmacro %}
+
+
+{# Search box that filters the rows of a table on the page #}
+{% macro table_search(table_id, placeholder="Search…") -%}
+<div class="search-input">
+    <i class="bi bi-search"></i>
+    <input type="search" class="form-control" placeholder="{{ placeholder }}" data-filter-table="{{ table_id }}" aria-label="{{ placeholder }}">
+</div>
+{%- endmacro %}
+
+
+{% macro no_results_row(colspan) -%}
+<tr class="no-results"><td colspan="{{ colspan }}" class="text-center text-muted py-4">No matches for your search.</td></tr>
+{%- endmacro %}
+
+
+{% macro uploader_name(file) -%}
+{{ "You" if file.uploaded_by == current_user.id else file.uploader.first_name ~ " " ~ file.uploader.last_name }}
+{%- endmacro %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Access denied{% endblock %}
+
+{% block content %}
+
+<div class="error-page">
+
+    <div class="empty-state">
+
+        <div class="empty-icon"><i class="bi bi-shield-lock"></i></div>
+
+        <div class="error-code mb-2">Error 403</div>
+
+        <h3>You don't have access to this page</h3>
+
+        <p>It belongs to another department, or your role doesn't allow this action. If you think you should have access, contact your administrator.</p>
+
+        <div class="d-flex justify-content-center gap-2 mt-3">
+            <a href="javascript:history.back()" class="btn btn-light btn-sm m-0">Go back</a>
+            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-primary btn-sm m-0">Dashboard</a>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
